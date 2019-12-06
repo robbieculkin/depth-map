@@ -45,84 +45,48 @@ def ransac_U(u,d):
 	return line_u,line_d
 
 
-def get_u_v_disparity(img):
-	path_to_kitti = "KITTI/data_scene_flow/testing/"
-	disparity = createMap(path_to_kitti,img)
-	plt.imsave("temp.png", disparity)
-	
-
-	u = np.tile(range(disparity.shape[1]), disparity.shape[0])
-	v = np.repeat(range(disparity.shape[0]), disparity.shape[1])
-	uv_disp = np.array([u,v,disparity.flatten()]).T
-
-	uv_disp_noblanks = uv_disp[uv_disp[:,2]!=-16]
-	u = uv_disp_noblanks[:,0].reshape(-1, 1)
-	v = uv_disp_noblanks[:,1].reshape(-1, 1)
-	d = uv_disp_noblanks[:,2]
-
-	return [u,v,d]
-
-
 if __name__ == '__main__':
+
 	path_to_kitti = "KITTI/data_scene_flow/testing/"
-	image_path = '000188_11.png'
-	disparity = createMap(path_to_kitti,image_path)
+	disparity = createMap(path_to_kitti,'000199_11.png')
 	plt.imsave("temp.png", disparity)
 
-	
-	arr = get_u_v_disparity(image_path)
-	u = arr[0]
-	v = arr[1]
-	d = arr[2]
+	LOOKBACK_WINDOW = 2
+	FRAME = 199
+	uvd = np.array([[-16,-16,-16]])
 
+	for lb in range(LOOKBACK_WINDOW):
+		d = createMap(path_to_kitti, f'000{FRAME-lb}_11.png')
+		u = np.tile(range(d.shape[1]), d.shape[0])
+		v = np.repeat(range(d.shape[0]), d.shape[1])
+		uv_disp = np.array([u,v,d.flatten()]).T
+		uvd = np.concatenate((uvd, uv_disp))
 
-	print(len(d))
+	print(uvd.shape)
 
-	N = 3
-	
-	d = np.repeat(d, N+1)
-	d = d.reshape(-1, 1)
-	# u = [[u[i][0] for x in range(N+1)] for i in range(len(u))]
-	print(d)
-	print(type(d))
-	print(len(d))
-
-
-	# i = int(image_path[0:6])
-
-	# direction = -1
-	# if i - N < 0:
-	# 	direction = 1
-
-	# j = 1
-	# while j < N+1:
-	# 	i += direction
-
-	# 	zeros = "0" * (6-len(str(i)))
-	# 	new_path = zeros + str(i) + "_11.png"
-
-	# 	d.append(get_u_v_disparity(new_path)[2])
-
-	# 	j += 1
+	uvd_noblanks = uvd[uvd[:,2] != -16]
+	u = uvd_noblanks[:,0].reshape(-1,1)
+	v = uvd_noblanks[:,1].reshape(-1,1)
+	d = uvd_noblanks[:,2]
 
 
 
 
-	# line_u,line_du = ransac_U(u, d)
-	# line_v,line_dv = ransac_V(v,d)
-	# img = Image.open("temp.png")
+	line_u,line_du = ransac_U(u, d)
+	line_v,line_dv = ransac_V(v,d)
+	img = Image.open("temp.png")
 
-	# for i,disp in enumerate(d):
+	for i,disp in enumerate(d):
 
-	# 	# Should below line be an OR or AND???
-	# 	if disp <= line_du[line_u[u[i]-line_u[0]-1]-line_u[0]-1] or disp <= line_dv[line_v[v[i]-line_v[0]-1]-line_v[0]-1]:
-	# 		img.putpixel((u[i][0],v[i][0]), (255,0,0)) # red
+		# Should below line be an OR or AND???
+		if disp <= line_du[line_u[u[i]-line_u[0]-1]-line_u[0]-1] and disp <= line_dv[line_v[v[i]-line_v[0]-1]-line_v[0]-1]:
+			img.putpixel((u[i][0],v[i][0]), (255,0,0)) # red
 
-	# 	else:
-	# 		img.putpixel((u[i][0],v[i][0]), (0,255,0)) # green
+		else:
+			img.putpixel((u[i][0],v[i][0]), (0,255,0)) # green
 
 
-	# img.show()
+	img.show()
 
 
 
