@@ -2,13 +2,12 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from depth_map import createMap
+import depth_map
 from sklearn.linear_model import RANSACRegressor as RR
 from PIL import Image
 
 
-def ransac_V(v,d):
-	# plt.scatter(x=v,y=d, s=0.01)
+def ransac(v,d):
 
 	ransac_v = RR()
 	ransac_v.fit(v,d)
@@ -18,74 +17,56 @@ def ransac_V(v,d):
 	line_v = np.arange(v.min(), v.max())[:, np.newaxis]
 	line_d = ransac_v.predict(line_v)
 
-	# plt.plot(line_v, line_d, color='gold', linewidth=2,label='RANSAC Regressor')
-	# plt.xlabel("V")
-	# plt.ylabel("Disparity")
-	# plt.show()
 	return line_v,line_d
 
 
+def mapGround(path_to_kitti,frame):
+	d = depth_map.createMap2(path_to_kitti,frame)
+	plt.imsave("temp.png", d)
 
-def ransac_U(u,d):
-	# plt.scatter(x=u,y=d, s=0.01)
+	OFFSET = 60
+	CURVE = 2000
+	CUT_OFF = len(d) // 3
 
-	ransac_u = RR()
-	ransac_u.fit(u,d)
-	inlier_mask = ransac_u.inlier_mask_
-	outlier_mask = np.logical_not(inlier_mask)
+	# Create road mask
+	for i in range(len(d)):
+		if i < CUT_OFF:
+			d[i] = [-16 for element in d[i]]
+		else:
+			for j in range(len(d[i])):
+				if j != OFFSET and i < int( (float(CURVE)/float(j-OFFSET)) + float(CUT_OFF) ):
+					d[i][j] = -16
+				elif i < int( (-float(CURVE)/float(j-len(d[i]))) + float(CUT_OFF) ):
+					d[i][j] = -16
 
-	line_u = np.arange(u.min(), u.max())[:, np.newaxis]
-	line_d = ransac_u.predict(line_u)
+	u = np.tile(range(d.shape[1]), d.shape[0])
+	v = np.repeat(range(d.shape[0]), d.shape[1])
+	uv_disp = np.array([u,v,d.flatten()]).T
 
-	# plt.plot(line_u, line_d, color='gold', linewidth=2,label='RANSAC Regressor')
-	# plt.xlabel("U")
-	# plt.ylabel("Disparity")
-	# plt.show()
-
-	return line_u,line_d
-
-
-if __name__ == '__main__':
-
-	path_to_kitti = "KITTI/data_scene_flow/testing/"
-	disparity = createMap(path_to_kitti,'000199_11.png')
-	plt.imsave("temp.png", disparity)
-
-	LOOKBACK_WINDOW = 2
-	FRAME = 199
-	uvd = np.array([[-16,-16,-16]])
-
-	for lb in range(LOOKBACK_WINDOW):
-		d = createMap(path_to_kitti, f'000{FRAME-lb}_11.png')
-		u = np.tile(range(d.shape[1]), d.shape[0])
-		v = np.repeat(range(d.shape[0]), d.shape[1])
-		uv_disp = np.array([u,v,d.flatten()]).T
-		uvd = np.concatenate((uvd, uv_disp))
-
-	print(uvd.shape)
-
-	uvd_noblanks = uvd[uvd[:,2] != -16]
+	uvd_noblanks = uv_disp[uv_disp[:,2] != -16]
 	u = uvd_noblanks[:,0].reshape(-1,1)
 	v = uvd_noblanks[:,1].reshape(-1,1)
 	d = uvd_noblanks[:,2]
 
-
-
-
-	line_u,line_du = ransac_U(u, d)
-	line_v,line_dv = ransac_V(v,d)
+	line_u,line_du = ransac(u, d)
+	line_v,line_dv = ransac(v,d)
 	img = Image.open("temp.png")
 
 	for i,disp in enumerate(d):
 
 		# Should below line be an OR or AND???
-		if disp <= line_du[line_u[u[i]-line_u[0]-1]-line_u[0]-1] and disp <= line_dv[line_v[v[i]-line_v[0]-1]-line_v[0]-1]:
+		# if disp <= line_du[line_u[u[i]-line_u[0]-1]-line_u[0]-1] and disp <= line_dv[line_v[v[i]-line_v[0]-1]-line_v[0]-1]:
+		if disp <= line_dv[line_v[v[i]-line_v[0]-1]-line_v[0]-1]:
 			img.putpixel((u[i][0],v[i][0]), (255,0,0)) # red
 
-		else:
-			img.putpixel((u[i][0],v[i][0]), (0,255,0)) # green
+	return img
 
 
+if __name__ == '__main__':
+
+	path_to_kitti = "KITTI/data_scene_flow/testing/"
+	frame = '000190_11.png'
+	img = mapGround(path_to_kitti, frame)
 	img.show()
 
 
