@@ -21,7 +21,7 @@ def ransac(v,d):
 
 
 def mapGround(path_to_kitti,frame):
-	d = depth_map.createMap2(path_to_kitti,frame)
+	d = depth_map.createSmoothMap(path_to_kitti,frame)
 	save_path = "disparity_mapped_frames/"+frame
 	plt.imsave(save_path, d)
 

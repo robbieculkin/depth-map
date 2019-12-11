@@ -6,6 +6,7 @@ import os
 import cv2
 import numpy as np
 import glob
+import time
 
 
 def createVideo(images_folder, video_folder, video_file):
@@ -28,7 +29,7 @@ def createVideo(images_folder, video_folder, video_file):
 
 	video.release()
 
-def runHalf(path_to_kitti, path_to_save, ending, i, n):
+def runRange(path_to_kitti, path_to_save, ending, i, n):
 	FIRST_DIGITS = 6
 
 	while i < n:
@@ -46,8 +47,8 @@ def runHalf(path_to_kitti, path_to_save, ending, i, n):
 
 def runAll(path_to_kitti, path_to_save):
 	NUM_PHOTOS = 200
-	evens_thread = Thread(target=runHalf, args=(path_to_kitti, path_to_save, "10", 0, NUM_PHOTOS,))
-	odds_thread = Thread(target=runHalf, args=(path_to_kitti, path_to_save, "11", 0, NUM_PHOTOS,))
+	evens_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "10", 0, NUM_PHOTOS,))
+	odds_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "11", 0, NUM_PHOTOS,))
 
 	evens_thread.start()
 	odds_thread.start()
@@ -64,8 +65,8 @@ def runAllPlus(path_to_kitti, path_to_save):
 		end = start+10
 		print("thread "+str(i)+" starts on "+str(start)+" and ends on "+str(end))
 
-		even_thread = Thread(target=runHalf, args=(path_to_kitti, path_to_save, "10", start, end,))
-		odd_thread = Thread(target=runHalf, args=(path_to_kitti, path_to_save, "11", start, end,))
+		even_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "10", start, end,))
+		odd_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "11", start, end,))
 
 		even_thread.start()
 		odd_thread.start()
@@ -79,6 +80,7 @@ def runAllPlus(path_to_kitti, path_to_save):
 
 
 if __name__ == '__main__':
+	start_time = time.time()
 	images_folder = "KITTI/data_scene_flow/testing/"
 	ground_frames = "ground_detected_frames/"
 	disparity_frames = "disparity_mapped_frames/"
@@ -87,3 +89,5 @@ if __name__ == '__main__':
 	createVideo(images_folder+"image_2", "videos/", "dataset.avi")
 	createVideo(ground_frames, "videos/", "ground_map.avi")
 	createVideo(disparity_frames, "videos/", "disparity_map.avi")
+
+	print("Execution time: " + str(time.time() - start_time) + " seconds")

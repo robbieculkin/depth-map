@@ -18,7 +18,7 @@ def createMap(rel_path, frame):
     return disparity
 
 
-def createMap2(rel_path, frame):
+def createSmoothMap(rel_path, frame):
     code_dir = os.path.dirname(__file__)
 
     left_path = os.path.join(code_dir, (rel_path+"image_2/"+frame))
@@ -64,6 +64,6 @@ def createMap2(rel_path, frame):
 if __name__ == '__main__':
     rel_path = "KITTI/data_scene_flow/testing/"
 
-    disparity = createMap2(rel_path, "000183_11.png")
+    disparity = createSmoothMap(rel_path, "000183_11.png")
     plt.imshow(disparity, 'gray')
     plt.show()
