@@ -22,7 +22,8 @@ def ransac(v,d):
 
 def mapGround(path_to_kitti,frame):
 	d = depth_map.createMap2(path_to_kitti,frame)
-	plt.imsave("temp.png", d)
+	save_path = "disparity_mapped_frames/"+frame
+	plt.imsave(save_path, d)
 
 	OFFSET = 60
 	CURVE = 2000
@@ -50,7 +51,7 @@ def mapGround(path_to_kitti,frame):
 
 	line_u,line_du = ransac(u, d)
 	line_v,line_dv = ransac(v,d)
-	img = Image.open("temp.png")
+	img = Image.open(save_path)
 
 	for i,disp in enumerate(d):
 
