@@ -2,6 +2,7 @@
 from fit_plane import mapGround
 from PIL import Image
 from threading import Thread
+from multiprocessing import Process
 import os
 import cv2
 import numpy as np
@@ -29,7 +30,7 @@ def createVideo(images_folder, video_folder, video_file):
 
 	video.release()
 
-def runRange(path_to_kitti, path_to_save, ending, i, n):
+def runRange(path_to_kitti, path_to_save, path_to_disparity, ending, i, n):
 	FIRST_DIGITS = 6
 
 	while i < n:
@@ -39,16 +40,16 @@ def runRange(path_to_kitti, path_to_save, ending, i, n):
 		print("Processing " + frame_name + "...")
 
 		
-		img = mapGround(path_to_kitti, frame_name)
+		img = mapGround(path_to_kitti, path_to_disparity, frame_name)
 		img.save(path_to_save+frame_name)
 		print("Completed "+frame_name+"!")
 
 		i += 1
 
-def runAll(path_to_kitti, path_to_save):
+def runAll(path_to_kitti, path_to_save, path_to_disparity):
 	NUM_PHOTOS = 200
-	evens_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "10", 0, NUM_PHOTOS,))
-	odds_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "11", 0, NUM_PHOTOS,))
+	evens_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "10", 0, NUM_PHOTOS,))
+	odds_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "11", 0, NUM_PHOTOS,))
 
 	evens_thread.start()
 	odds_thread.start()
@@ -56,7 +57,7 @@ def runAll(path_to_kitti, path_to_save):
 	evens_thread.join()
 	odds_thread.join()
 
-def runAllPlus(path_to_kitti, path_to_save):
+def runAllPlus(path_to_kitti, path_to_save, path_to_disparity):
 	threads = []
 	NUM_THREADS = 20
 
@@ -65,8 +66,8 @@ def runAllPlus(path_to_kitti, path_to_save):
 		end = start+10
 		print("thread "+str(i)+" starts on "+str(start)+" and ends on "+str(end))
 
-		even_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "10", start, end,))
-		odd_thread = Thread(target runRange, args=(path_to_kitti, path_to_save, "11", start, end,))
+		even_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "10", start, end,))
+		odd_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "11", start, end,))
 
 		even_thread.start()
 		odd_thread.start()
@@ -77,6 +78,27 @@ def runAllPlus(path_to_kitti, path_to_save):
 	for thread in threads:
 		thread.join()
 
+def runAllPlusPlus(path_to_kitti, path_to_save, path_to_disparity):
+	processes = []
+	NUM_PROCESSES = 20
+
+	for i in range(NUM_PROCESSES):
+		start = 10*i
+		end = start+10
+		print("thread "+str(i)+" starts on "+str(start)+" and ends on "+str(end))
+
+		even_process = Process(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "10", start, end,))
+		odd_process = Process(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "11", start, end,))
+
+		even_process.start()
+		odd_process.start()
+
+		processes.append(even_process)
+		processes.append(odd_process)
+
+	for process in processes:
+		process.join()
+
 
 
 if __name__ == '__main__':
@@ -85,7 +107,7 @@ if __name__ == '__main__':
 	ground_frames = "ground_detected_frames/"
 	disparity_frames = "disparity_mapped_frames/"
 
-	runAllPlus(images_folder, ground_frames)
+	runAllPlusPlus(images_folder, ground_frames, disparity_frames)
 	createVideo(images_folder+"image_2", "videos/", "dataset.avi")
 	createVideo(ground_frames, "videos/", "ground_map.avi")
 	createVideo(disparity_frames, "videos/", "disparity_map.avi")

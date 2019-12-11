@@ -20,9 +20,9 @@ def ransac(v,d):
 	return line_v,line_d
 
 
-def mapGround(path_to_kitti,frame):
+def mapGround(path_to_kitti,path_to_output,frame):
 	d = depth_map.createSmoothMap(path_to_kitti,frame)
-	save_path = "disparity_mapped_frames/"+frame
+	save_path = path_to_output+frame
 	plt.imsave(save_path, d)
 
 	OFFSET = 60
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
 	path_to_kitti = "KITTI/data_scene_flow/testing/"
 	frame = '000190_11.png'
-	img = mapGround(path_to_kitti, frame)
+	img = mapGround(path_to_kitti,"", frame)
 	img.show()
 
 
