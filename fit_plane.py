@@ -71,8 +71,9 @@ def mapGround(path_to_kitti,path_to_output,frame):
 if __name__ == '__main__':
 
 	path_to_kitti = "KITTI/data_scene_flow/testing/"
-	frame = '000015_10.png'
-	img = mapGround(path_to_kitti,"", frame)
+	frame = '000193_10.png'
+	img = mapGround(path_to_kitti,"temp/", frame)
+	img.save("temp/"+frame)
 	img.show()
 
 

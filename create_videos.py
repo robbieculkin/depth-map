@@ -2,29 +2,34 @@
 from fit_plane import mapGround
 from PIL import Image
 from multiprocessing import Process
+from matplotlib import pyplot as plt
 import os
 import cv2
 import numpy as np
 import time
 
 
-def createVideo(images_folder, disparity_folder, ground_folder, video_folder, video_file, n):
-	img_array = []
-	FPS = 1
+def createVideo(images_folder, disparity_folder, ground_folder, combined_folder, video_folder, video_file, n):
+	FPS = 2
 	FIRST_DIGITS = 6
 
 	print("Compiling images in " + images_folder + " into a video: " + video_file)
-	images_folder = os.path.join(os.path.dirname(__file__), images_folder)
-	disparity_folder = os.path.join(os.path.dirname(__file__), disparity_folder)
-	ground_folder = os.path.join(os.path.dirname(__file__), ground_folder)
-	video_folder = os.path.join(os.path.dirname(__file__), video_folder)
+	cur_dir = os.path.dirname(__file__)
+	images_folder = os.path.join(cur_dir, images_folder)
+	disparity_folder = os.path.join(cur_dir, disparity_folder)
+	ground_folder = os.path.join(cur_dir, ground_folder)
+	combined_folder = os.path.join(cur_dir, combined_folder)
+	video_folder = os.path.join(cur_dir, video_folder)
 
 	i = 0
 	switch = False
+	video = None
+
 	while i < n:
 		frame = str(i)
 		num_zeros = FIRST_DIGITS - len(frame)
 		frame_name = ('0'*num_zeros) + frame + '_1' + str(int(switch)) + '.png'
+		print(frame_name)
 
 		original_img = cv2.imread(images_folder+frame_name)
 		disp_img = cv2.imread(disparity_folder+frame_name)
@@ -33,16 +38,17 @@ def createVideo(images_folder, disparity_folder, ground_folder, video_folder, vi
 		img_combined = np.concatenate((original_img, disp_img, ground_img), axis=0)
 		height,width,layers = img_combined.shape
 		size = (width,height)
-		img_array.append(img_combined)
+
+
+		cv2.imwrite(combined_folder+frame_name, img_combined)
+
+		if i == 0 and not switch:
+			video = cv2.VideoWriter(video_folder+video_file, cv2.VideoWriter_fourcc('M','J','P','G'), FPS, size) # 
+		video.write(img_combined)
 
 		if switch:
 			i += 1
 		switch = not switch
-
-	video = cv2.VideoWriter(video_folder+video_file, 0, FPS, size)
-
-	for i in range(len(img_array)):
-		video.write(img_array[i])
 
 	video.release()
 
@@ -92,7 +98,7 @@ if __name__ == '__main__':
 	ground_frames = "ground_detected_frames/"
 	disparity_frames = "disparity_mapped_frames/"
 
-	runAll(images_folder, ground_frames, disparity_frames)
-	createVideo(images_folder+"image_2/", disparity_frames, ground_frames, "videos/", "dataset.avi", 200)
+	# runAll(images_folder, ground_frames, disparity_frames)
+	createVideo(images_folder+"image_2/", disparity_frames, ground_frames, "combined/", "videos/", "dataset.avi", 200)
 
 	print("Execution time: " + str(time.time() - start_time) + " seconds")

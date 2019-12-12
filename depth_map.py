@@ -64,6 +64,6 @@ def createSmoothMap(rel_path, frame):
 if __name__ == '__main__':
     rel_path = "KITTI/data_scene_flow/testing/"
 
-    disparity = createSmoothMap(rel_path, "000015_10.png")
+    disparity = createMap(rel_path, "000015_10.png")
     plt.imshow(disparity, 'gray')
     plt.show()
