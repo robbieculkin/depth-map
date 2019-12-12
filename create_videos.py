@@ -1,27 +1,43 @@
 # run_all.py
 from fit_plane import mapGround
 from PIL import Image
-from threading import Thread
 from multiprocessing import Process
 import os
 import cv2
 import numpy as np
-import glob
 import time
 
 
-def createVideo(images_folder, video_folder, video_file):
+def createVideo(images_folder, disparity_folder, ground_folder, video_folder, video_file, n):
 	img_array = []
-	FPS = 2
+	FPS = 1
+	FIRST_DIGITS = 6
 
 	print("Compiling images in " + images_folder + " into a video: " + video_file)
 	images_folder = os.path.join(os.path.dirname(__file__), images_folder)
+	disparity_folder = os.path.join(os.path.dirname(__file__), disparity_folder)
+	ground_folder = os.path.join(os.path.dirname(__file__), ground_folder)
 	video_folder = os.path.join(os.path.dirname(__file__), video_folder)
-	for file in glob.glob(images_folder+"*.png"):
-		img = cv2.imread(file)
-		height,width,layers = img.shape
+
+	i = 0
+	switch = False
+	while i < n:
+		frame = str(i)
+		num_zeros = FIRST_DIGITS - len(frame)
+		frame_name = ('0'*num_zeros) + frame + '_1' + str(int(switch)) + '.png'
+
+		original_img = cv2.imread(images_folder+frame_name)
+		disp_img = cv2.imread(disparity_folder+frame_name)
+		ground_img = cv2.imread(ground_folder+frame_name)
+
+		img_combined = np.concatenate((original_img, disp_img, ground_img), axis=0)
+		height,width,layers = img_combined.shape
 		size = (width,height)
-		img_array.append(img)
+		img_array.append(img_combined)
+
+		if switch:
+			i += 1
+		switch = not switch
 
 	video = cv2.VideoWriter(video_folder+video_file, 0, FPS, size)
 
@@ -46,46 +62,15 @@ def runRange(path_to_kitti, path_to_save, path_to_disparity, ending, i, n):
 
 		i += 1
 
+
 def runAll(path_to_kitti, path_to_save, path_to_disparity):
-	NUM_PHOTOS = 200
-	evens_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "10", 0, NUM_PHOTOS,))
-	odds_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "11", 0, NUM_PHOTOS,))
-
-	evens_thread.start()
-	odds_thread.start()
-
-	evens_thread.join()
-	odds_thread.join()
-
-def runAllPlus(path_to_kitti, path_to_save, path_to_disparity):
-	threads = []
-	NUM_THREADS = 20
-
-	for i in range(NUM_THREADS):
-		start = 10*i
-		end = start+10
-		print("thread "+str(i)+" starts on "+str(start)+" and ends on "+str(end))
-
-		even_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "10", start, end,))
-		odd_thread = Thread(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "11", start, end,))
-
-		even_thread.start()
-		odd_thread.start()
-
-		threads.append(even_thread)
-		threads.append(odd_thread)
-
-	for thread in threads:
-		thread.join()
-
-def runAllPlusPlus(path_to_kitti, path_to_save, path_to_disparity):
 	processes = []
 	NUM_PROCESSES = 20
 
 	for i in range(NUM_PROCESSES):
 		start = 10*i
 		end = start+10
-		print("thread "+str(i)+" starts on "+str(start)+" and ends on "+str(end))
+		print("process "+str(i)+" starts on "+str(start)+" and ends on "+str(end))
 
 		even_process = Process(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "10", start, end,))
 		odd_process = Process(target=runRange, args=(path_to_kitti, path_to_save, path_to_disparity, "11", start, end,))
@@ -107,9 +92,7 @@ if __name__ == '__main__':
 	ground_frames = "ground_detected_frames/"
 	disparity_frames = "disparity_mapped_frames/"
 
-	runAllPlusPlus(images_folder, ground_frames, disparity_frames)
-	createVideo(images_folder+"image_2/", "videos/", "dataset.avi")
-	createVideo(ground_frames, "videos/", "ground_map.avi")
-	createVideo(disparity_frames, "videos/", "disparity_map.avi")
+	runAll(images_folder, ground_frames, disparity_frames)
+	createVideo(images_folder+"image_2/", disparity_frames, ground_frames, "videos/", "dataset.avi", 200)
 
 	print("Execution time: " + str(time.time() - start_time) + " seconds")

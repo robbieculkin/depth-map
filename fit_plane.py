@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import depth_map
 from sklearn.linear_model import RANSACRegressor as RR
 from PIL import Image
+import cv2
 
 
 def ransac(v,d):
@@ -23,11 +24,15 @@ def ransac(v,d):
 def mapGround(path_to_kitti,path_to_output,frame):
 	d = depth_map.createSmoothMap(path_to_kitti,frame)
 	save_path = path_to_output+frame
-	plt.imsave(save_path, d)
+	plt.imsave(save_path,d)
+
+	image = cv2.imread(save_path)
+	gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+	cv2.imwrite(save_path, gray_img)
 
 	OFFSET = 60
 	CURVE = 2000
-	CUT_OFF = len(d) // 3
+	CUT_OFF = (len(d) // 3)
 
 	# Create road mask
 	for i in range(len(d)):
@@ -49,24 +54,24 @@ def mapGround(path_to_kitti,path_to_output,frame):
 	v = uvd_noblanks[:,1].reshape(-1,1)
 	d = uvd_noblanks[:,2]
 
-	line_u,line_du = ransac(u, d)
 	line_v,line_dv = ransac(v,d)
 	img = Image.open(save_path)
+	color_img = Image.new("RGB", img.size)
+	color_img.paste(img)
 
 	for i,disp in enumerate(d):
 
-		# Should below line be an OR or AND???
-		# if disp <= line_du[line_u[u[i]-line_u[0]-1]-line_u[0]-1] and disp <= line_dv[line_v[v[i]-line_v[0]-1]-line_v[0]-1]:
 		if disp <= line_dv[line_v[v[i]-line_v[0]-1]-line_v[0]-1]:
-			img.putpixel((u[i][0],v[i][0]), (255,0,0)) # red
+			r,g,b = color_img.getpixel((int(u[i][0]),int(v[i][0])))
+			color_img.putpixel((u[i][0],v[i][0]), (r+30,g,b)) # red
 
-	return img
+	return color_img
 
 
 if __name__ == '__main__':
 
 	path_to_kitti = "KITTI/data_scene_flow/testing/"
-	frame = '000190_11.png'
+	frame = '000015_10.png'
 	img = mapGround(path_to_kitti,"", frame)
 	img.show()
 

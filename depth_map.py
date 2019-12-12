@@ -46,7 +46,7 @@ def createSmoothMap(rel_path, frame):
     right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
 
     wls_filter = cv2.ximgproc.createDisparityWLSFilter(matcher_left=left_matcher)
-    wls_filter.setLambda(80000)
+    wls_filter.setLambda(8000)
     wls_filter.setSigmaColor(1.2)
 
     disp_l = np.int16(left_matcher.compute(imgL,imgR))
@@ -64,6 +64,6 @@ def createSmoothMap(rel_path, frame):
 if __name__ == '__main__':
     rel_path = "KITTI/data_scene_flow/testing/"
 
-    disparity = createSmoothMap(rel_path, "000183_11.png")
+    disparity = createSmoothMap(rel_path, "000015_10.png")
     plt.imshow(disparity, 'gray')
     plt.show()
