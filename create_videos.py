@@ -108,7 +108,7 @@ if __name__ == '__main__':
 	disparity_frames = "disparity_mapped_frames/"
 
 	runAllPlusPlus(images_folder, ground_frames, disparity_frames)
-	createVideo(images_folder+"image_2", "videos/", "dataset.avi")
+	createVideo(images_folder+"image_2/", "videos/", "dataset.avi")
 	createVideo(ground_frames, "videos/", "ground_map.avi")
 	createVideo(disparity_frames, "videos/", "disparity_map.avi")
 
